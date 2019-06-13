@@ -89,31 +89,45 @@ void manualFill(char select, unsigned filas, unsigned columnas){
     switch (select)
     {
         case 'A':
-            for(int i = 0; i < filas; i++)
-                for(int j = 0; j < columnas; j++)
-                    cin >> *(mtrzA + i*columnas + j);
+            for(int i = 0; i < filas; i++) {
+                for (int j = 0; j < columnas; j++) {
+                    cout << "Ingrese Valor " << select <<" [" << i << ", " << j << "]"<<endl;
+                    cin >> *(mtrzA + i * columnas + j);
+                }
+            }
             break;
         case 'B':
-            for(int i = 0; i < filas; i++)
-                for(int j = 0; j < columnas; j++)
-                    cin >> *(mtrzB + i*columnas + j);
+            for(int i = 0; i < filas; i++) {
+                for (int j = 0; j < columnas; j++) {
+                    cout << "Ingrese Valor " << select << " [" << i << ", " << j << "]" << endl;
+                    cin >> *(mtrzB + i * columnas + j);
+                }
+            }
             break;
         default:
             cout <<"¡Selección inválida!";
     }
 }
 
-void execute (char select, unsigned &filas, unsigned &columnas,  bool fill,  bool show){
+void execute (char select, unsigned &filas, unsigned &columnas, bool autodimention, bool fill,  bool show){
+    filas = 1000;
+    columnas = 1000;
+    if(!autodimention){
+        cout << "Número de filas para la matriz " << select << ":" << endl;
+        cin >> filas;
+        cout << "Número de columnas para la matriz " << select << ":" << endl;
+        cin >> columnas;
+    }
 
-    cout << "Número de filas para la matriz " << select << ":" << endl;
-    cin >> filas;
-    cout << "Número de columnas para la matriz " << select << ":" << endl;
-    cin >> columnas;
     allocateMemory(select, filas, columnas);
 
-    (fill)? fillNumbers(select, filas, columnas) : manualFill(select, filas, columnas);
+    if (fill)
+        fillNumbers(select, filas, columnas);
+    else
+        manualFill(select, filas, columnas);
 
     if (show) print(select, filas, columnas);
+
 }
 
 void *calcular (void *parametros){ //producto matricial con parametros
@@ -130,7 +144,6 @@ void *calcular (void *parametros){ //producto matricial con parametros
         }
     }
     //print('C',fa,cb);
-    return nullptr;
 }
 
 double productWithThreads(unsigned nthreads, unsigned fa, unsigned cafb, unsigned cb, bool mostrar){
@@ -175,33 +188,44 @@ double productWithThreads(unsigned nthreads, unsigned fa, unsigned cafb, unsigne
     gettimeofday(&time, nullptr);
     tEnd = time.tv_sec + (time.tv_usec /1000000.0);
     tTotal = (double)(tEnd-tStart);
-
+    cout << endl;
     if (mostrar) print('C',fa, cb);
-
+    cout << endl;
     return tTotal;
 }
 
  
 int main(){
-    bool autofill, show;
+    bool autofill, autodimention, show, loop;
     unsigned nHilos = 1, fa, ca, fb, cb;
-    cout << "Multiplicacion de Matrices" << endl;
-    cout << "Desea autorrellenar las matrices? 1 (Sí), 0 (No) " << endl;
+    cout << "\n|--------------------Multiplicacion de Matrices------------------------|\n" << endl;
+    cout << "¿Desea autorrellenar el número de filas y columnas? 1 (Sí), 0 (No) " << endl;
+    cin >> autodimention;
+    cout << "¿Desea autorrellenar las matrices? 1 (Sí), 0 (No) " << endl;
     cin >> autofill;
-    cout << "Desea mostrar las matrices? 1 (Sí), 0 (No) " << endl;
+    cout << "¿Desea mostrar las matrices? 1 (Sí), 0 (No) " << endl;
     cin >> show;
-    cout << "Cuantos hilos desea emplear?" << endl;
+    execute('A', fa, ca, autodimention, autofill, show);
+    execute('B', fb, cb, autodimention, autofill, show);
+    allocateMemory('C', fa, cb);
+
+    cout << "¿Cuantos hilos desea emplear?" << endl;
     cin >> nHilos;
 
-    execute('A', fa, ca, autofill, show);
-    execute('B', fb, cb, autofill, show);
-    allocateMemory('C', fa, cb);
-    
+    cout << "¿Desea ver la operación de 1 a " << nHilos << " seleccionados? 1 (Sí), 0 (No)" << endl;
+    cin >> loop;
     if(validarProducto(ca, fb)){
-        for(int i = 1; i <= nHilos; i++){ //Realizar la misma operación con diferenete num hilos
+        if (loop){
+            for(int i = 1; i <= nHilos; i++){ //Realizar la misma operación con diferenete num hilos
+                cout << "----------------------------------------"  << endl;
+                double time = productWithThreads(i, fa, ca, cb, show);
+                cout << "Tiempo para " << i << " hilos " << time <<"s"<< endl;
+                cout << "----------------------------------------\n"  << endl;
+            }
+        }else{
             cout << "----------------------------------------"  << endl;
-            double time = productWithThreads(i, fa, ca, cb, false);
-            cout << "Tiempo para " << i << " hilos " << time <<"s"<< endl;
+            double time = productWithThreads(nHilos, fa, ca, cb, show);
+            cout << "Tiempo para " << nHilos << " hilos " << time <<"s"<< endl;
             cout << "----------------------------------------\n"  << endl;
         }
     }else
