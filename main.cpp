@@ -1,225 +1,213 @@
 #include <iostream>
 #include <time.h>
 #include <pthread.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
 #include <sys/time.h>
-#define NUM_HILOS 32
+using namespace std;
 
 double *mtrzA;
 double *mtrzB;
 double *mtrzC;
 
-//Declaro una 
-struct data{
-    int i, j, k; 
-    int nFilA, nColAFilB, nColB;
+struct Data{
+    unsigned i, j, k, nFilA, nColAFilB, nColB;
 };
 
-void allocateMemory(char select, int filas, int columnas); 
-void print(char select, int filas, int columnas); //imprime las matrices
-void fillNumbers(char select, int filas, int columnas); //llena las matrices
-void execute (char select, int filas, int columnas); //llama a allocateMemory y fillNumbers
-int validarProducto(int ca, int fb){ return (ca==fb)? 1: 0;} //Valida el producto matricial
-void productoMatricial(int fa, int cafb, int cb); //producto matricial secuencial
-void *calcular (void *parametros);
-double productWithThreads(int nthreads, int fa, int cafb, int cb);
-
- 
-int main(){
-    int fa, ca, fb, cb, rc; 
-    long t;
-    pthread_t hilos[NUM_HILOS];
-    FILE *fp;
-    fp = fopen ( "fichero.txt", "a+t" ); 
-    printf("Multiplicacion de Matrices\n");
-  
-    printf("Número de filas para la matriz %c:\n", 'A');
-    scanf("%d",&fa);
-    printf("Número de columnas para la matriz %c:\n", 'A');
-    scanf("%d",&ca);
-    execute('A', fa, ca);
-
-    printf("Número de filas para la matriz %c:\n", 'B');
-    scanf("%d",&fb);
-    printf("Número de columnas para la matriz %c:\n", 'B');
-    scanf("%d",&cb);
-    execute('B', fb, cb);
-    allocateMemory('C', fa, cb);
-    
-    if(validarProducto(ca, fb)){
-        for(int i = 1; i <= NUM_HILOS; i++){ //Realizar la misma operación con diferenete num hilos
-            printf("----------------------------------------\n");
-            double time = productWithThreads(i, fa, ca, cb);
-            fprintf(fp,"%f, ", time);
-            printf("Tiempo para %d hilos %f s\n",i, time);
-            printf("Performance para %d hilos: %f \n",i,1/time);
-            printf("----------------------------------------\n\n");
-        }
-    }else{
-        printf("Producto Matricial Inválido!\n");
-    }
-    
-    fclose ( fp );
-} //fin de main
-
-void allocateMemory(char select, int filas, int columnas){
-switch (select)
-{
-case 'A':
-    mtrzA=(double*)malloc(sizeof(double *)*filas + sizeof(double)*columnas*filas);
-    break;
-case 'B':
-    mtrzB=(double*)malloc(sizeof(double *)*filas + sizeof(double)*columnas*filas); 
-    break;
-case 'C':
-    mtrzC=(double*)malloc(sizeof(double *)*filas + sizeof(double)*columnas*filas);
-    break;
-default:
-    printf("Error! operator is not correct");
+bool validarProducto(unsigned ca, unsigned fb){ //Valida el producto matricial
+    return ca == fb;
 }
-};
-void print(char select, int filas, int columnas){
-    
+
+void allocateMemory(char select, unsigned filas, unsigned columnas){ //Alocar memoria
     switch (select)
     {
-    case 'A':
-    printf("Matriz A: \n");
-        for(int i = 0; i < filas; i++){
-            for(int j = 0; j < columnas; j++)
-                printf("%lf ",*(mtrzA + i*columnas + j));  
-        printf("\n");
+        case 'A':
+            mtrzA = new double[filas*columnas];
+            break;
+        case 'B':
+            mtrzB = new double[filas*columnas];
+            break;
+        case 'C':
+            mtrzC = new double[filas*columnas];
+            break;
+        default:
+            cout <<"¡Selección inválida!";
     }
-    break;
-    case 'B':
-    printf("Matriz B: \n");
-        for(int i = 0; i < filas; i++){
-            for(int j = 0; j < columnas; j++){
-            printf("%lf ",*(mtrzB + i*columnas + j));  
-        }
-        printf("\n");
-    }
-        break;
-    case 'C':
-    printf("Matriz C: \n");
-        for(int i = 0; i < filas; i++){
-            for(int j = 0; j < columnas; j++){
-            printf("%lf ",*(mtrzC + i*columnas + j));  
-        }
-        printf("\n");
-    }
-    break;
-    default:
-        printf("Error! operator is not correcta");
-    }
-};
+}
 
-void fillNumbers(char select, int filas, int columnas){
+void print(char select, unsigned filas, unsigned columnas){
     switch (select)
     {
-    case 'A':
-        for(int i = 0; i < filas; i++)
-            for(int j = 0; j < columnas; j++)
-                *(mtrzA + i*columnas + j) = rand()%15;
-            
-        break;
-    case 'B':
-        for(int i = 0; i < filas; i++)
-            for(int j = 0; j < columnas; j++)
-                *(mtrzB + i*columnas + j) = rand()%15;
-    break;
-    default:
-        printf("Error! operator is not correct");
-    }
-};
-void execute (char select, int filas, int columnas){
-    allocateMemory(select, filas, columnas);
-    fillNumbers(select, filas, columnas);
-    //print(select, filas, columnas);
-};
-
-void productoMatricial(int fa, int cafb, int cb){
-        for (int i = 0; i < fa; i++){
-            for(int j = 0; j < cb; j++){
-                int temp = 0;
-                for(int k = 0; k < cafb; k++){
-                    int a = *(mtrzA + i*cafb + k); 
-                    int b = *(mtrzB + k*cb + j);
-                    temp += a*b; 
-                    *(mtrzC + i*cb + j) = temp;             
-                }
+        case 'A':
+            printf("Matriz A: \n");
+            for(int i = 0; i < filas; i++){
+                for(int j = 0; j < columnas; j++)
+                    cout <<*(mtrzA + i*columnas + j) << " ";
+                cout << endl;
             }
-        }
-        print('C',fa,cb);
-}; //fin de producto matricial secuencial
+            break;
+        case 'B':
+            printf("Matriz B: \n");
+            for(int i = 0; i < filas; i++){
+                for(int j = 0; j < columnas; j++){
+                    cout <<*(mtrzB + i*columnas + j) << " ";
+                }
+                cout << endl;
+            }
+            break;
+        case 'C':
+            printf("Matriz C: \n");
+            for(int i = 0; i < filas; i++){
+                for(int j = 0; j < columnas; j++){
+                    cout <<*(mtrzC + i*columnas + j) << " ";
+                }
+                cout << endl;
+            }
+            break;
+        default:
+            cout <<"¡Selección inválida!";
+    }
+}
+
+void fillNumbers(char select, unsigned filas, unsigned columnas){
+    switch (select)
+    {
+        case 'A':
+            for(int i = 0; i < filas; i++)
+                for(int j = 0; j < columnas; j++)
+                    *(mtrzA + i*columnas + j) = rand()%15;
+            break;
+        case 'B':
+            for(int i = 0; i < filas; i++)
+                for(int j = 0; j < columnas; j++)
+                    *(mtrzB + i*columnas + j) = rand()%15;
+            break;
+        default:
+            cout <<"¡Selección inválida!";
+    }
+}
+
+void manualFill(char select, unsigned filas, unsigned columnas){
+    switch (select)
+    {
+        case 'A':
+            for(int i = 0; i < filas; i++)
+                for(int j = 0; j < columnas; j++)
+                    cin >> *(mtrzA + i*columnas + j);
+            break;
+        case 'B':
+            for(int i = 0; i < filas; i++)
+                for(int j = 0; j < columnas; j++)
+                    cin >> *(mtrzB + i*columnas + j);
+            break;
+        default:
+            cout <<"¡Selección inválida!";
+    }
+}
+
+void execute (char select, unsigned &filas, unsigned &columnas,  bool fill,  bool show){
+
+    cout << "Número de filas para la matriz " << select << ":" << endl;
+    cin >> filas;
+    cout << "Número de columnas para la matriz " << select << ":" << endl;
+    cin >> columnas;
+    allocateMemory(select, filas, columnas);
+
+    (fill)? fillNumbers(select, filas, columnas) : manualFill(select, filas, columnas);
+
+    if (show) print(select, filas, columnas);
+}
 
 void *calcular (void *parametros){ //producto matricial con parametros
-    int i, j, k, fa, cafb, cb;
-    long t;
-    struct data *datos = (data *)parametros;
-
-    i = datos->i;
-    j = datos->j;
-    k = datos->k;
-    fa = datos->nFilA;
-    cafb = datos->nColAFilB;
-    cb = datos->nColB;
-
-    for (; i < fa; i++){
-        for(int j = 0; j < cb; j++){
-            int temp = 0;
-            for(int k = 0; k < cafb; k++){
-                int a = *(mtrzA + i*cafb + k);
-                int b = *(mtrzB + k*cb + j);
-                temp += a*b;
-                *(mtrzC + i*cb + j) = temp;
+    Data *datos = (Data *) parametros;
+    for (; datos->i < datos->nFilA; datos->i++){
+        for(datos->j = 0; datos->j <  datos->nColB; datos->j++){
+            double sumOfProd = 0;
+            for(datos->k = 0; datos->k < datos->nColAFilB; datos->k++){
+                double a = *(mtrzA + datos->i*datos->nColAFilB + datos->k);
+                double b = *(mtrzB + datos->k*datos->nColB + datos->j);
+                sumOfProd += a*b;
+                *(mtrzC + datos->i*datos->nColB + datos->j) = sumOfProd;
             }
         }
     }
     //print('C',fa,cb);
+    return nullptr;
 }
-double productWithThreads(int nthreads, int fa, int cafb, int cb){
-    double inicio, fin;
-    double tiempoTotal;
-    struct timeval tiempo;
 
-    printf("Multiplicando matrices con %d hilos. \n", nthreads);
-    gettimeofday(&tiempo, NULL);
-    inicio = tiempo.tv_sec + tiempo.tv_usec/1000000.0;
+double productWithThreads(unsigned nthreads, unsigned fa, unsigned cafb, unsigned cb, bool mostrar){
+    //Para medir el tiempo de ejecución
+    double tStart, tEnd, tTotal;
+    struct timeval time{};
+    gettimeofday(&time, nullptr);
+    tStart = time.tv_sec + time.tv_usec/1000000.0;
 
+    cout << "Multiplicando matrices con " << nthreads << " hilos" << endl;
     pthread_t hilos[nthreads];
 
     for (int z = 0; z < nthreads; z++){
-        struct data *parametros = (data *)malloc(sizeof(struct data));
-
+        Data *parametros = new Data;
         parametros->nColAFilB = cafb;
         parametros->nColB = cb;
 
         if(fa % nthreads == 0){ //si las filas de A son divisibles por la cantidad de hilos
             parametros->i = (z)*fa/nthreads; //liminf
             parametros->nFilA =(z+1)*fa/nthreads; //limsup
+
         }else{ //cuando no es divisible
+
             parametros->i = (z)*(fa/nthreads +1);
             parametros->nFilA = (z+1)*(fa/nthreads+1);
+            //Corregir cuando el limsup supera a fa
+            if(parametros->nFilA > fa || ((z+2)*fa/nthreads) > fa)
+                parametros->nFilA = fa;
         }
-        if(parametros->nFilA > fa || ((z+2)*fa/nthreads)>fa){ //Corregir cuando el limsup supera a fa
-            parametros->nFilA = fa;
-        }
-        pthread_attr_t pt_attr; pthread_attr_init(&pt_attr);
-        int resultadoThread = pthread_create(&hilos[z], &pt_attr, calcular, parametros);
-        if (resultadoThread  == -1) { printf("Error creando el hilo.\n"); return -1;}
+
+        pthread_attr_t pt_attr;
+        pthread_attr_init(&pt_attr);
+        pthread_create(&hilos[z], &pt_attr, calcular, parametros);
 
     }
+
     //union de threads
-    for(int z = 0; z < nthreads; z++){ pthread_join(hilos[z],NULL);}
+    for(int z = 0; z < nthreads; z++) 
+        pthread_join(hilos[z],nullptr);
+    
 
-    gettimeofday(&tiempo, NULL);
-    fin = tiempo.tv_sec + (tiempo.tv_usec /1000000.0);
-    //print('C',fa, cb);
+    gettimeofday(&time, nullptr);
+    tEnd = time.tv_sec + (time.tv_usec /1000000.0);
+    tTotal = (double)(tEnd-tStart);
 
-    tiempoTotal = (double)(fin-inicio);
-    return tiempoTotal;
+    if (mostrar) print('C',fa, cb);
+
+    return tTotal;
 }
+
+ 
+int main(){
+    bool autofill, show;
+    unsigned nHilos = 1, fa, ca, fb, cb;
+    cout << "Multiplicacion de Matrices" << endl;
+    cout << "Desea autorrellenar las matrices? 1 (Sí), 0 (No) " << endl;
+    cin >> autofill;
+    cout << "Desea mostrar las matrices? 1 (Sí), 0 (No) " << endl;
+    cin >> show;
+    cout << "Cuantos hilos desea emplear?" << endl;
+    cin >> nHilos;
+
+    execute('A', fa, ca, autofill, show);
+    execute('B', fb, cb, autofill, show);
+    allocateMemory('C', fa, cb);
+    
+    if(validarProducto(ca, fb)){
+        for(int i = 1; i <= nHilos; i++){ //Realizar la misma operación con diferenete num hilos
+            cout << "----------------------------------------"  << endl;
+            double time = productWithThreads(i, fa, ca, cb, false);
+            cout << "Tiempo para " << i << " hilos " << time <<"s"<< endl;
+            cout << "----------------------------------------\n"  << endl;
+        }
+    }else
+        cout << "Producto Matricial Inválido!" << endl;
+
+
+} //tEnd de main
+
 
